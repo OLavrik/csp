@@ -7,16 +7,26 @@ from flask import request
 from own.restplus import api
 from own.locat import Locations
 from own.paper import PaperArxiv
-from own.towns import TownDetect
+import telegram
 from own.start_end import check_greeting,check_farewell, greeting_words, farewell_words
+
+def sent_photo(chat_id, path):
+    token = ""
+
+    send_message(chat_id, "Отчет за последние 2 дня!" )
+    bot = telegram.Bot(token=token)
+    bot.send_photo(chat_id, photo=open(path, 'rb'))
+    # send_message(chat_id, "Аномалий не было обнаружено.")
+    send_message(chat_id, "Понервничали 7 раз.")
+    return "OK"
+
 
 l = Locations()
 paper = PaperArxiv()
-towns = TownDetect()
 
 log = logging.getLogger(__name__)
 
-ns = api.namespace('chat_bot_hse',
+ns = api.namespace('chat_bot',
                    description='Operations to get documentation'
                    )
 
@@ -25,31 +35,15 @@ ns = api.namespace('chat_bot_hse',
 # ты + negativ -> no thank
 
 stickers={
-    "positive": ["CAACAgIAAxkBAAOqYMns-0CraXExcqLyyLsoXuvxhZ4AAjETAALo1uISzKKcP0Iv5wgfBA",
-                 "CAACAgIAAxkBAAOwYMnudS829Gae1wqwJsLzUG-AV2gAAmESAALo1uISUlEXDAjMAAExHwQ",
-                 "CAACAgIAAxkBAAOyYMnumeaf9bivqT3BdEFJIdrL5qoAAmMSAALo1uIS72wB9JWXwDgfBA",
-                 "CAACAgIAAxkBAAO0YMnu38mfDPsmLm1-UJ_8YqJEk3sAAskSAALo1uISY63Nf2THxFUfBA"],
-    "negative": ["CAACAgIAAxkBAAO2YMnu_PgdrUufzqg_9UjSQHsMw9YAAt0TAALo1uISjXlm36x8hmcfBA",
-                 "CAACAgIAAxkBAAO4YMnvDC3OtskFpr0738a15zN414IAAi8TAALo1uISfYQ9YRAg0t0fBA",
-                 "CAACAgIAAxkBAAO6YMnvHlZjMV99b03Au-g0gMKDGy8AAiUTAALo1uISbTLNQ_p-VHofBA",
-                 "CAACAgIAAxkBAAO8YMnvMVuBzep9PCL5SU5yU648tvwAAjoTAALo1uISwun-QDmkq_4fBA"],
-    "thank":["CAACAgIAAxkBAAOcYMniiHUPYpiQHhBPM2Mw2pM9nBgAAigTAALo1uISAW3oGlJon4kfBA",
-            "CAACAgIAAxkBAAOsYMntRzHKqdnqSU7prHHltu-dbFwAAm0SAALo1uISK5x6STjv-VgfBA",
-            "CAACAgIAAxkBAAOuYMnuQGv9X7j86_K4v3n6TOfthD8AAngSAALo1uISk8d5hpdGJ9YfBA"],
-    "no_thank":["CAACAgIAAxkBAAO-YMnviu0Gt4mIgc5iofDDT9kh6c4AAnASAALo1uISyvLm19ltZy8fBA"],
-    "neutral":['CAACAgIAAxkBAAIBbmDKKD060OoImzjH3M7ljM2TX_mMAAIgEwAC6NbiEjV-fzc3FjGxHwQ', 'CAACAgIAAxkBAAIBcGDKKMr-xK76tFrDUQx4Mx4vj5xoAAIwEwAC6NbiEgjvqY4J1s5LHwQ']
-}
+    "positive": ["CAACAgIAAxkBAAMEYM6ktxMTA-MgRDO-YBCc9tPgp6wAAsoBAAIq8joHfJVhJkmAgxQfBA"],
+    "negative": ["CAACAgIAAxkBAAMGYM6k59kOMsr1xzWdS1AXU6ACIO8AAtkBAAIq8joH3sm6l-MJryofBA"],
+    "thank":["CAACAgIAAxkBAAMUYM6nxr-AoQJqJ0tojdjFkF9dgZsAAsoBAAIq8joHfJVhJkmAgxQfBA",
+            "CAACAgIAAxkBAAMWYM6n2ItZYfTrEZA_WPeHzjbZ5IcAAswBAAIq8joH1RQIBVa6zmUfBA"],
+    "rong_sleep":["CAACAgIAAxkBAAMYYM6n9gYV6Apxbwvoo3CYmv1zwFYAAtsBAAIq8joHEQiyxczCZjUfBA"],
+    "angry":["CAACAgIAAxkBAAMaYM6oCwo8Nj20wvk1pj0qN8HwKzoAAtsBAAIq8joHEQiyxczCZjUfBA"]
+   }
 
-import requests
-import json
 
-def detect_tonal(text):
-    body = {"text": text}
-    doc_url = 'http://127.0.0.1:5000/tonal/'
-    r = requests.post(doc_url, json=body)
-    d = json.loads(r.content)
-
-    return d["res"]
 
 
 def choose_sticker(text,positive=True):
@@ -67,14 +61,6 @@ def choose_sticker(text,positive=True):
     else:
         return random.choice(stickers["negative"])
 
-def get_answer(text):
-    body = {"text": text}
-    doc_url = 'http://127.0.0.1:5000/wiki/'
-    r = requests.post(doc_url, json=body)
-    d = json.loads(r.content)
-    if "Not Found" in d["res"]:
-        return ""
-    return d["res"]
 
 
 
@@ -120,6 +106,7 @@ class RecommendationDoc(Resource):
                     a=t[0]
                     t=a.upper()+t[1:]
                     send_message(chat_id, t)
+                    send_message(chat_id, stickers["positive"][0], False)
                     return "OK"
 
                 if check_farewell(text):
@@ -129,6 +116,23 @@ class RecommendationDoc(Resource):
                     t=a.upper()+t[1:]
                     send_message(chat_id, t)
                     return "OK"
+                if "ты можешь" in text:
+                    s="""\n1) Следить за твоим сердечком! \n2) Контролировать особенности! \n3) Ежемесячный отчет! \n4) Предупреждать о потенциальных сбоях/ пренапряжениях! \n5) Позвать кого-то на помощь!"""
+
+                    send_message(chat_id,s)
+                    send_message(chat_id, stickers["positive"][0], False)
+                    return "OK"
+
+                if "пасибо" in text:
+                    send_message(chat_id, stickers["positive"][0], False)
+                    send_message(chat_id, "Ну и чего ты не спишь?!")
+                    send_message(chat_id, stickers["rong_sleep"][0], False)
+                    return "OK"
+
+                if "отчет":
+                    sent_photo(chat_id, "./Screenshot 2021-06-20 at 05.34.26.png")
+                    return "OK"
+
 
                 if paper.check_need_paper(text) :
 
@@ -139,62 +143,12 @@ class RecommendationDoc(Resource):
                     l.set_d(chat_id, False)
                     return "OK"
 
-                # погода
-                if towns.weather_check(text) or l.get_w(chat_id):
-                    answer=towns.create_weather(l.get_town_string(chat_id), text)
-                    if answer=="":
-                        l.set_w(chat_id, False)
-                        l.set_d(chat_id, False)
-                    else:
-                        send_message(chat_id, answer)
-                        l.set_d(chat_id, False)
-                        l.set_w(chat_id)
-                        return "OK"
 
 
 
 
-                # города
-                if towns.dist_check(text) or l.get_d(chat_id):
-                    answer=str(towns.create_dist(l.get_town_string(chat_id), text))
-                    if answer=="":
-                        l.set_w(chat_id, False)
-                        l.set_d(chat_id, False)
-                    else:
-                        send_message(chat_id, answer)
-                        l.set_d(chat_id)
-                        l.set_w(chat_id, False)
-                        return "OK"
-
-                # реакция
-                tonal=detect_tonal(text)
 
 
-                if tonal=="positive":
-                    stick=choose_sticker(text, True)
-                    l.set_w(chat_id, False)
-                    l.set_d(chat_id, False)
-
-                    send_message(chat_id, stick, False)
-                    return "OK"
-                if tonal == "negative":
-                    stick=choose_sticker(text, False)
-
-                    l.set_w(chat_id, False)
-                    l.set_d(chat_id, False)
-
-
-                    send_message(chat_id, stick, False)
-                    return "OK"
-                if tonal == "neutral":
-                    stick=get_answer(text)
-                    if stick!="":
-                        a = stick[0]
-                        stick = a.upper() + stick[1:]
-                        l.set_w(chat_id, False)
-                        l.set_d(chat_id, False)
-                        send_message(chat_id, stick)
-                        return "OK"
 
             except:
                 send_message(chat_id, "Что-то где-то ошибочка ;)")

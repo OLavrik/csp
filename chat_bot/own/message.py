@@ -4,7 +4,7 @@ import telegram
 
 def send_message(chat_id, text, flagText=True):
     method = "sendMessage"
-    token = "1891994837:AAFzf5jDzl82jhvgkCIzhds8iGOw2G8WaRM"
+    token = ""
     url = f"https://api.telegram.org/bot{token}/{method}"
     if flagText:
         data = {"chat_id": chat_id, "text": text}
@@ -13,3 +13,5 @@ def send_message(chat_id, text, flagText=True):
 
         bot = telegram.Bot(token=token)
         bot.send_sticker(chat_id=chat_id, sticker=text)
+
+
