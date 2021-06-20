@@ -1,0 +1,8 @@
+curl --location --request POST 'https://api.telegram.org/bot1891994837:AAFzf5jDzl82jhvgkCIzhds8iGOw2G8WaRM/setWebhook' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "url": "https://bf9a49cae0c6.ngrok.io/api/chat_bot_hse/messages/"
+}'
+
+
+{'update_id': 61462022, 'message': {'message_id': 3, 'from': {'id': 634127160, 'is_bot': False, 'first_name': 'Olya', 'last_name': 'Lavrik', 'username': 'olya_lavrik', 'language_code': 'en'}, 'chat': {'id': 634127160, 'first_name': 'Olya', 'last_name': 'Lavrik', 'username': 'olya_lavrik', 'type': 'private'}, 'date': 1623758176, 'location': {'latitude': 55.960371, 'longitude': 93.017736}}}
